@@ -13,11 +13,21 @@ class TodoListViewController : UITableViewController
 {
   var itemArray = ["Find Mike", "Buy Eggos", "Destroy Demogorgon"]
 
+  let defaults = UserDefaults.standard
+
+  private let userDefaultsKey = "TodoListArray"
+  private let cellIdentifier = "ToDoItemCell"
+
 
   override func viewDidLoad()
   {
     super.viewDidLoad()
     // Do any additional setup after loading the view, typically from a nib.
+
+    if let userDefaults = defaults.value(forKey: userDefaultsKey) as? [String]
+    {
+      itemArray = userDefaults
+    }
   }
 
   //MARK - Tableview Datasource Methods
@@ -29,7 +39,7 @@ class TodoListViewController : UITableViewController
 
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
   {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+    let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath)
     cell.textLabel?.text = itemArray[indexPath.row]
     return cell
   }
@@ -57,6 +67,8 @@ class TodoListViewController : UITableViewController
       if text.count > 0
       {
         self.itemArray.append(text)
+
+        self.defaults.set(self.itemArray, forKey: self.userDefaultsKey)
 
         let indexPath = [IndexPath(item: self.itemArray.count - 1, section: 0)]
         self.tableView.insertRows(at: indexPath, with: .automatic)
