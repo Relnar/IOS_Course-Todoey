@@ -14,13 +14,19 @@ class TodoListViewController : UITableViewController
 {
   // MARK: Attributes
   var itemArray = [Item]()
+  var selectedCategory : Category?
+  {
+    didSet
+    {
+      navigationItem.title = selectedCategory?.name
+      loadItems()
+    }
+  }
 
-  let defaults = UserDefaults.standard
   let dataFilePath = FileManager.default.urls(for: .documentDirectory,
                                               in: .userDomainMask)
   private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
-  private let userDefaultsKey = "TodoListArray"
   private let cellIdentifier = "ToDoItemCell"
 
   @IBOutlet weak var searchBar: UISearchBar!
@@ -30,9 +36,6 @@ class TodoListViewController : UITableViewController
   override func viewDidLoad()
   {
     super.viewDidLoad()
-
-    // Do any additional setup after loading the view, typically from a nib.
-    loadItems()
   }
 
   // MARK: - Tableview Datasource Methods
@@ -79,6 +82,7 @@ class TodoListViewController : UITableViewController
         let item = Item(context: self.context)
         item.title = text
         item.done = false
+        item.parentCategory = self.selectedCategory
         self.itemArray.append(item)
 
         self.saveItems()
@@ -112,8 +116,17 @@ class TodoListViewController : UITableViewController
     }
   }
 
-  private func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest())
+  private func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil)
   {
+    var predicates = [NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)]
+    if predicate != nil
+    {
+      predicates.append(predicate!)
+    }
+
+    // Compound predicate that includes the filter predicate
+    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+
     do
     {
       itemArray = try context.fetch(request)
@@ -135,10 +148,14 @@ extension TodoListViewController : UISearchBarDelegate
     if (searchText.count > 0)
     {
       // [cd] = Case insensitive and accent insensitive
-      request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+      let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
       request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+      loadItems(with: request, predicate: predicate)
     }
-    loadItems(with: request)
+    else
+    {
+      loadItems(with: request)
+    }
     tableView.reloadData()
 
     if (searchText.count == 0)
