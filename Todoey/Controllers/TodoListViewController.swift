@@ -156,7 +156,8 @@ class TodoListViewController : SwipeTableViewController
     }
     if let userPredicate = predicate
     {
-      todoItems = (todoItems.filter{ (item) in userPredicate.evaluate(with: item) }).sorted { $0.title < $1.title }
+      todoItems = (todoItems.filter{ (item) in userPredicate.evaluate(with: item) })
+                            .sorted { $0.title < $1.title }
     }
   }
 }
