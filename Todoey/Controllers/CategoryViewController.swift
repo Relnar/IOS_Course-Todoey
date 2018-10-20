@@ -10,11 +10,10 @@ import UIKit
 import RealmSwift
 
 
-class CategoryViewController: UITableViewController
+class CategoryViewController: SwipeTableViewController
 {
   // MARK: - Attributes
   private var categories : Results<Category>?
-  private let cellIdentifier = "CategoryCell"
 
   let realm = try! Realm()
 
@@ -36,7 +35,7 @@ class CategoryViewController: UITableViewController
 
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
   {
-    let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath)
+    let cell = super.tableView(tableView, cellForRowAt: indexPath)
     cell.textLabel?.text = categories?[indexPath.row].name ?? "No category name"
     return cell
   }
@@ -76,6 +75,28 @@ class CategoryViewController: UITableViewController
     catch
     {
       print("Error saving context \(error)")
+    }
+  }
+
+  override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath)
+  {
+    if (editingStyle == .delete)
+    {
+      // handle delete (by removing the data from your array and updating the tableview)
+      if let category = categories?[indexPath.row]
+      {
+        do
+        {
+          try realm.write
+          {
+            realm.delete(category)
+          }
+        }
+        catch
+        {
+          print("Error deleting category \(error)")
+        }
+      }
     }
   }
 
