@@ -18,10 +18,10 @@ class TodoListViewController : SwipeTableViewController
   {
     didSet
     {
-      navigationItem.title = selectedCategory?.name
       loadItems()
     }
   }
+  private var parentColors : (textColor: UIColor, backgroundColor: UIColor)?
 
   private let realm = try! Realm()
 
@@ -32,6 +32,43 @@ class TodoListViewController : SwipeTableViewController
   override func viewDidLoad()
   {
     super.viewDidLoad()
+    tableView.separatorStyle = .none
+  }
+
+  override func viewWillAppear(_ animated: Bool)
+  {
+    super.viewWillAppear(true)
+
+    guard let navBar = navigationController?.navigationBar
+    else
+    {
+      fatalError("Navigation controller doesn't exist.")
+    }
+
+    parentColors = (textColor: navBar.largeTitleTextAttributes?[.foregroundColor] as! UIColor,
+                    backgroundColor: navBar.barTintColor!)
+
+    let colors = selectColorsFromCategory(darkenBy: 0)
+    setNavigationBarColors(navBar: navBar, colors: colors)
+
+    searchBar.barTintColor = colors.backgroundColor
+    title = selectedCategory?.name
+  }
+
+  override func viewWillDisappear(_ animated: Bool)
+  {
+    super.viewWillDisappear(animated)
+
+    guard let navBar = navigationController?.navigationBar
+    else
+    {
+      fatalError("Navigation controller doesn't exist.")
+    }
+
+    if let colors = parentColors
+    {
+      setNavigationBarColors(navBar: navBar, colors: colors)
+    }
   }
 
   // MARK: - Tableview Datasource Methods
@@ -47,6 +84,9 @@ class TodoListViewController : SwipeTableViewController
     let item = todoItems[indexPath.row]
     cell.textLabel?.text = item.title
     cell.accessoryType = item.done ? .checkmark : .none
+    let colors = selectColorsFromCategory(darkenBy: CGFloat(indexPath.row) / CGFloat(todoItems.count))
+    cell.backgroundColor = colors.backgroundColor
+    cell.textLabel?.textColor = colors.textColor
     return cell
   }
 
@@ -73,7 +113,7 @@ class TodoListViewController : SwipeTableViewController
     }
   }
 
-  //MARK: - Tableview Delegate Methods
+  // MARK: - Tableview Delegate Methods
 
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
   {
@@ -97,7 +137,7 @@ class TodoListViewController : SwipeTableViewController
     }
   }
 
-  //MARK: - Add New Items
+  // MARK: - Add New Items
 
   @IBAction func addButtonPressed(_ sender: UIBarButtonItem)
   {
@@ -121,9 +161,7 @@ class TodoListViewController : SwipeTableViewController
               currentCategory.items.append(item)
               self.todoItems.append(item)
 
-              let index = self.todoItems.count
-              let indexPath = [IndexPath(item: index - 1, section: 0)]
-              self.tableView.insertRows(at: indexPath, with: .automatic)
+              self.tableView.reloadData()
             }
           }
           catch
@@ -144,7 +182,7 @@ class TodoListViewController : SwipeTableViewController
     present(alert, animated: true, completion: nil)
   }
 
-  //MARK: - Model Manipulation Methods
+  // MARK: - Model Manipulation Methods
 
   private func loadItems(predicate: NSPredicate? = nil)
   {
@@ -159,6 +197,26 @@ class TodoListViewController : SwipeTableViewController
       todoItems = (todoItems.filter{ (item) in userPredicate.evaluate(with: item) })
                             .sorted { $0.title < $1.title }
     }
+  }
+
+  // MARK:- UI Colors
+
+  private func selectColorsFromCategory(darkenBy percentage: CGFloat) -> (textColor : UIColor, backgroundColor : UIColor)
+  {
+    if let category = selectedCategory
+    {
+      let backgroundColor = UIColor(hexString: category.backgroundColor)?.darken(byPercentage: percentage) ?? .white
+      let textColor = UIColor.init(contrastingBlackOrWhiteColorOn: backgroundColor, isFlat: true)
+      return (textColor, backgroundColor)
+    }
+    return (.black, .white)
+  }
+
+  private func setNavigationBarColors(navBar: UINavigationBar, colors: (textColor: UIColor, backgroundColor: UIColor))
+  {
+    navBar.barTintColor = colors.backgroundColor
+    navBar.tintColor = colors.textColor
+    navBar.largeTitleTextAttributes = [.foregroundColor : colors.textColor]
   }
 }
 

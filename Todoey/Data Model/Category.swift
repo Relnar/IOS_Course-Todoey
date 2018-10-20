@@ -13,5 +13,6 @@ class Category : Object
 {
   // Realm can dynamically update the variable if it changes
   @objc dynamic var name: String = ""
+  @objc dynamic var backgroundColor: String = "FFFFFF"
   let items = List<Item>()
 }
